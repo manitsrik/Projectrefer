@@ -30,12 +30,15 @@ import {
   BellOutlined,
   TeamOutlined,
   EditOutlined,
-  SaveOutlined
+  SaveOutlined,
+  PlusOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser, updateUser } from '../store/authSlice';
 import { fetchCustomers } from '../store/customersSlice';
 import { useNavigate } from 'react-router-dom';
+import CustomerFormPage from './CustomerFormPage';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -50,6 +53,9 @@ const AgentDashboard = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [isAddCustomerModalVisible, setIsAddCustomerModalVisible] = useState(false);
+  const [isCustomerDetailModalVisible, setIsCustomerDetailModalVisible] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   // Load agent's customers on component mount
   useEffect(() => {
@@ -166,7 +172,8 @@ const AgentDashboard = () => {
     email: customer.email,
     phone: customer.phone,
     status: customer.status,
-    registrationDate: customer.registrationDate
+    registrationDate: customer.registrationDate,
+    projectInterest: customer.projectInterest
   }));
 
   const customerColumns = [
@@ -174,7 +181,18 @@ const AgentDashboard = () => {
       title: 'รหัสลูกค้า',
       dataIndex: 'customerCode',
       key: 'customerCode',
-      render: (text) => <Tag color="green">{text}</Tag>
+      render: (text, record) => (
+        <Tag 
+          color="green" 
+          onClick={() => {
+            setSelectedCustomer(record);
+            setIsCustomerDetailModalVisible(true);
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          {text}
+        </Tag>
+      )
     },
     {
       title: 'ชื่อ-นามสกุล',
@@ -192,6 +210,11 @@ const AgentDashboard = () => {
       key: 'phone',
     },
     {
+      title: 'โครงการที่สนใจ',
+      dataIndex: 'projectInterest',
+      key: 'projectInterest',
+    },
+    {
       title: 'สถานะ',
       dataIndex: 'status',
       key: 'status',
@@ -206,7 +229,26 @@ const AgentDashboard = () => {
       dataIndex: 'registrationDate',
       key: 'registrationDate',
       render: (date) => new Date(date).toLocaleDateString('th-TH')
-    }
+    },
+    {
+      title: 'จัดการ',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              console.log("Selected Customer:", record);
+              setSelectedCustomer(record);
+              setIsCustomerDetailModalVisible(true);
+            }}
+          >
+            ดูรายละเอียด
+          </Button>
+        </Space>
+      ),
+    },
   ];
 
   const renderContent = () => {
@@ -262,6 +304,13 @@ const AgentDashboard = () => {
       case 'customers':
         return (
           <Card title="ลูกค้าของฉัน">
+            <Row justify="end" style={{ marginBottom: '16px' }}>
+              <Col>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsAddCustomerModalVisible(true)}>
+                  เพิ่มลูกค้า
+                </Button>
+              </Col>
+            </Row>
             <Table 
               dataSource={myCustomers} 
               columns={customerColumns}
@@ -429,7 +478,7 @@ const AgentDashboard = () => {
           {!collapsed && (
             <Title level={4} style={{ color: 'white', margin: 0 }}>
               <TeamOutlined style={{ marginRight: '8px' }} />
-              Agent Portal
+              ระบบตัวแทน
             </Title>
           )}
         </div>
@@ -489,6 +538,78 @@ const AgentDashboard = () => {
           {renderContent()}
         </Content>
       </Layout>
+
+      <Modal
+        title="เพิ่มลูกค้าใหม่"
+        open={isAddCustomerModalVisible}
+        onCancel={() => setIsAddCustomerModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <CustomerFormPage 
+            isModal={true} 
+            onFinish={() => {
+              setIsAddCustomerModalVisible(false);
+              dispatch(fetchCustomers({
+                agentId: user.agentId,
+                status: 'all',
+                page: 1,
+                limit: 100
+              }));
+            }} 
+            agentId={user?.agentId} 
+        />
+      </Modal>
+
+      <Modal
+        title="รายละเอียดลูกค้า"
+        open={isCustomerDetailModalVisible}
+        onCancel={() => {
+          setIsCustomerDetailModalVisible(false);
+          setSelectedCustomer(null);
+        }}
+        footer={null}
+        width={700}
+      >
+        {selectedCustomer && (
+          <Card bordered={false}>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Text strong>รหัสลูกค้า:</Text>
+                <p>{selectedCustomer.customerCode}</p>
+              </Col>
+              <Col span={12}>
+                <Text strong>ชื่อ-นามสกุล:</Text>
+                <p>{selectedCustomer.name}</p>
+              </Col>
+              <Col span={12}>
+                <Text strong>อีเมล:</Text>
+                <p>{selectedCustomer.email}</p>
+              </Col>
+              <Col span={12}>
+                <Text strong>เบอร์โทร:</Text>
+                <p>{selectedCustomer.phone}</p>
+              </Col>
+              <Col span={12}>
+                <Text strong>โครงการที่สนใจ:</Text>
+                <p>{selectedCustomer.projectInterest}</p>
+              </Col>
+              <Col span={12}>
+                <Text strong>สถานะ:</Text>
+                <p>
+                  <Tag color={selectedCustomer.status === 'active' ? 'green' : 'red'}>
+                    {selectedCustomer.status === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                  </Tag>
+                </p>
+              </Col>
+              <Col span={12}>
+                <Text strong>วันที่ลงทะเบียน:</Text>
+                <p>{new Date(selectedCustomer.registrationDate).toLocaleDateString('th-TH')}</p>
+              </Col>
+            </Row>
+          </Card>
+        )}
+      </Modal>
     </Layout>
   );
 };

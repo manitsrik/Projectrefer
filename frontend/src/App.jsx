@@ -12,6 +12,8 @@ import LoginPage from './pages/LoginPage';
 import AgentRegister from './pages/AgentRegister';
 import Dashboard from './pages/Dashboard';
 import AgentDashboard from './pages/AgentDashboard';
+import CustomerDetailPage from './pages/CustomerDetailPage';
+import CustomerFormPage from './pages/CustomerFormPage'; // New import
 import LoadingSpinner from './components/LoadingSpinner';
 
 // Protected Route component
@@ -101,6 +103,24 @@ const AppContent = () => {
               element={
                 <ProtectedRoute>
                   <AgentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            {/* New route for Customer Detail Page */}
+            <Route
+              path="/customer/:id"
+              element={
+                <ProtectedRoute>
+                  <CustomerDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* New route for Add Customer Form */}
+            <Route
+              path="/customer/add"
+              element={
+                <ProtectedRoute>
+                  <CustomerFormPage />
                 </ProtectedRoute>
               }
             />

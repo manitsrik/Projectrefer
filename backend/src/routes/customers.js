@@ -15,8 +15,8 @@ router.use(protect);
 // Customer management routes
 router
   .route('/')
-  .get(authorize('admin', 'manager'), getCustomers)
-  .post(authorize('admin', 'manager'), createCustomer);
+  .get(authorize('admin', 'manager', 'agent'), getCustomers)
+  .post(authorize('admin', 'manager', 'agent'), createCustomer);
 
 router
   .route('/:id')
