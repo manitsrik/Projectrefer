@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -28,9 +28,15 @@ import {
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../store/authSlice';
+import { fetchAgents } from '../store/agentsSlice';
+import { fetchCustomers } from '../store/customersSlice';
+import { setPagination as setAgentsPagination, setFilters as setAgentsFilters } from '../store/agentsSlice';
+import { setPagination as setCustomersPagination } from '../store/customersSlice';
 import AgentManagement from './AgentManagement';
 import CustomerManagement from './CustomerManagement';
 import ProjectManagement from './ProjectManagement';
+import UserProfile from './UserProfile';
+import SettingsPage from './SettingsPage';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -40,9 +46,57 @@ const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const [collapsed, setCollapsed] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState('dashboard');
+  
+  const [stats, setStats] = useState({
+    totalAgents: 0,
+    pendingAgents: 0,
+    newCustomers: 0,
+  });
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        // Fetch all stats in parallel
+        const [pendingAgentsResult, totalAgentsResult, newCustomersResult] = await Promise.all([
+          dispatch(fetchAgents({ status: 'pending', limit: 1 })).unwrap(),
+          dispatch(fetchAgents({ limit: 1 })).unwrap(),
+          dispatch(fetchCustomers({ status: 'new', limit: 1 })).unwrap(),
+        ]);
+
+        setStats({
+          pendingAgents: pendingAgentsResult.pagination?.total || 0,
+          totalAgents: totalAgentsResult.pagination?.total || 0,
+          newCustomers: newCustomersResult.pagination?.total || 0,
+        });
+
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+      }
+    };
+
+    if (selectedMenu === 'dashboard') {
+      fetchDashboardStats();
+    }
+  }, [dispatch, selectedMenu]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
+  };
+
+  const handleMenuSelect = ({ key }) => {
+    // Reset pagination when navigating to specific pages
+    if (key === 'agents') {
+      dispatch(setAgentsPagination({ current: 1, pageSize: 10 }));
+    }
+    if (key === 'customers') {
+      dispatch(setCustomersPagination({ current: 1, pageSize: 10 }));
+    }
+    setSelectedMenu(key);
+  };
+
+  const handleViewAllAgents = () => {
+    dispatch(setAgentsFilters({ status: 'all', search: '' }));
+    handleMenuSelect({ key: 'agents' });
   };
 
   const userMenuItems = [
@@ -50,11 +104,13 @@ const Dashboard = () => {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'โปรไฟล์',
+      onClick: () => setSelectedMenu('profile'),
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
       label: 'ตั้งค่า',
+      onClick: () => setSelectedMenu('settings'),
     },
     {
       type: 'divider',
@@ -106,23 +162,32 @@ const Dashboard = () => {
                 <Card>
                   <Statistic
                     title="เอเจนต์ทั้งหมด"
-                    value={4}
+                    value={stats.totalAgents}
                     valueStyle={{ color: '#3f8600' }}
                   />
+                  <div style={{ marginTop: '8px' }}>
+                    <Button 
+                      type="link" 
+                      size="small"
+                      onClick={handleViewAllAgents}
+                    >
+                      ดูรายละเอียด →
+                    </Button>
+                  </div>
                 </Card>
               </Col>
               <Col xs={24} sm={12} lg={6}>
                 <Card>
                   <Statistic
                     title="เอเจนต์รออนุมัติ"
-                    value={1}
+                    value={stats.pendingAgents}
                     valueStyle={{ color: '#fa8c16' }}
                   />
                   <div style={{ marginTop: '8px' }}>
                     <Button 
                       type="link" 
                       size="small"
-                      onClick={() => setSelectedMenu('agents')}
+                      onClick={() => handleMenuSelect({ key: 'agents' })}
                     >
                       ดูรายละเอียด →
                     </Button>
@@ -133,14 +198,14 @@ const Dashboard = () => {
                 <Card>
                   <Statistic
                     title="ลูกค้าใหม่"
-                    value={5}
+                    value={stats.newCustomers}
                     valueStyle={{ color: '#1890ff' }}
                   />
                   <div style={{ marginTop: '8px' }}>
                     <Button 
                       type="link" 
                       size="small"
-                      onClick={() => setSelectedMenu('customers')}
+                      onClick={() => handleMenuSelect({ key: 'customers' })}
                     >
                       ดูรายละเอียด →
                     </Button>
@@ -170,6 +235,10 @@ const Dashboard = () => {
         return <CustomerManagement />;
       case 'projects':
         return <ProjectManagement />;
+      case 'profile':
+        return <UserProfile />;
+      case 'settings':
+        return <SettingsPage />;
       case 'reports':
         return (
           <Card title="รายงาน">
@@ -203,7 +272,7 @@ const Dashboard = () => {
           mode="inline"
           selectedKeys={[selectedMenu]}
           items={menuItems}
-          onSelect={({ key }) => setSelectedMenu(key)}
+          onSelect={handleMenuSelect}
         />
       </Sider>
       
@@ -226,7 +295,7 @@ const Dashboard = () => {
           </Space>
           
           <Space size="middle">
-            <Badge count={5}>
+            <Badge count={stats.pendingAgents}>
               <Button type="text" icon={<BellOutlined />} size="large" />
             </Badge>
             
@@ -245,9 +314,9 @@ const Dashboard = () => {
         </Header>
         
         <Content style={{ 
-          margin: (selectedMenu === 'agents' || selectedMenu === 'customers') ? '0' : '24px', 
-          padding: (selectedMenu === 'agents' || selectedMenu === 'customers') ? '0' : '24px',
-          background: (selectedMenu === 'agents' || selectedMenu === 'customers') ? '#f0f2f5' : '#fff',
+          margin: (selectedMenu === 'agents' || selectedMenu === 'customers' || selectedMenu === 'profile' || selectedMenu === 'settings') ? '0' : '24px', 
+          padding: (selectedMenu === 'agents' || selectedMenu === 'customers' || selectedMenu === 'profile' || selectedMenu === 'settings') ? '0' : '24px',
+          background: (selectedMenu === 'agents' || selectedMenu === 'customers' || selectedMenu === 'profile' || selectedMenu === 'settings') ? '#f0f2f5' : '#fff',
           borderRadius: (selectedMenu === 'agents' || selectedMenu === 'customers') ? '0' : '8px',
           minHeight: 'calc(100vh - 112px)'
         }}>

@@ -128,6 +128,7 @@ const AgentDashboard = () => {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'โปรไฟล์',
+      onClick: () => setSelectedMenu('profile'),
     },
     {
       type: 'divider',
@@ -286,19 +287,6 @@ const AgentDashboard = () => {
                 </Card>
               </Col>
             </Row>
-            
-            <Card title="ลูกค้าล่าสุด" style={{ marginBottom: '24px' }}>
-              <Table 
-                dataSource={myCustomers} 
-                columns={customerColumns}
-                pagination={false}
-                size="small"
-                loading={customersLoading}
-                locale={{
-                  emptyText: 'ยังไม่มีลูกค้า'
-                }}
-              />
-            </Card>
           </div>
         );
       case 'customers':

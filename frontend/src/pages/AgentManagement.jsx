@@ -405,6 +405,7 @@ const AgentManagement = () => {
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
+            defaultPageSize: 10,
             total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
