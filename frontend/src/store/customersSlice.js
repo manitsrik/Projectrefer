@@ -77,12 +77,25 @@ export const fetchAgentsList = createAsyncThunk(
   }
 );
 
+export const getCustomerStatusCounts = createAsyncThunk(
+  'customers/getCustomerStatusCounts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await customersAPI.getCustomerStatusCounts();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const customersSlice = createSlice({
   name: 'customers',
   initialState: {
     customers: [],
     currentCustomer: null,
     agentsList: [],
+    customerStatusCounts: {},
     loading: false,
     agentsLoading: false,
     error: null,
@@ -217,6 +230,21 @@ const customersSlice = createSlice({
       .addCase(fetchAgentsList.rejected, (state, action) => {
         console.log('=== fetchAgentsList.rejected ===', action.payload);
         state.agentsLoading = false;
+        state.error = action.payload;
+      })
+
+      // Get customer status counts
+      .addCase(getCustomerStatusCounts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getCustomerStatusCounts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.customerStatusCounts = action.payload;
+        state.error = null;
+      })
+      .addCase(getCustomerStatusCounts.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       });
   },

@@ -73,6 +73,7 @@ export const customersAPI = {
   update: (id, customerData) => api.put(`/customers/${id}`, customerData),
   delete: (id) => api.delete(`/customers/${id}`),
   approve: (id) => api.put(`/customers/${id}/approve`),
+  getCustomerStatusCounts: () => api.get('/customers/status-counts'),
 };
 
 // Projects API

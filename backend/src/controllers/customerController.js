@@ -163,3 +163,36 @@ export const deleteCustomer = async (req, res) => {
     });
   }
 };
+
+// @desc    Get customer status counts
+// @route   GET /api/customers/status-counts
+// @access  Private/Admin/Manager
+export const getCustomerStatusCounts = async (req, res) => {
+  try {
+    const statusCounts = await Customer.findAll({
+      attributes: [
+        'status',
+        [Customer.sequelize.fn('COUNT', Customer.sequelize.col('status')), 'count'],
+      ],
+      group: ['status'],
+    });
+
+    const formattedCounts = statusCounts.reduce((acc, item) => {
+      acc[item.status] = item.dataValues.count;
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      message: 'Customer status counts fetched successfully',
+      data: formattedCounts,
+    });
+  } catch (error) {
+    console.error('Error fetching customer status counts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch customer status counts',
+      error: error.message,
+    });
+  }
+};

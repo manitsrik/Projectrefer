@@ -5,12 +5,16 @@ import {
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  getCustomerStatusCounts,
 } from '../controllers/customerController.js';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(protect);
+
+// Customer status counts route
+router.route('/status-counts').get(authorize('admin', 'manager'), getCustomerStatusCounts);
 
 // Customer management routes
 router
